@@ -48,11 +48,12 @@ jobs:
       - name: Push results to data repo
         run: |
           mkdir -p cro-data/state
-          cp report.html           cro-data/report.html
-          cp ROADMAP.md            cro-data/ROADMAP.md          2>/dev/null || true
-          cp state/baseline.json   cro-data/state/baseline.json
-          cp state/history.json    cro-data/state/history.json
-          cp state/last_audit.json cro-data/state/last_audit.json
+          # Only copy files that exist — audit may have aborted due to rate limiting
+          [ -f report.html           ] && cp report.html           cro-data/report.html           || true
+          [ -f ROADMAP.md            ] && cp ROADMAP.md            cro-data/ROADMAP.md            || true
+          [ -f state/baseline.json   ] && cp state/baseline.json   cro-data/state/baseline.json   || true
+          [ -f state/history.json    ] && cp state/history.json    cro-data/state/history.json    || true
+          [ -f state/last_audit.json ] && cp state/last_audit.json cro-data/state/last_audit.json || true
           # feedback.json is only written by the Streamlit app — CI never overwrites it
           [ -f cro-data/state/feedback.json ] || echo '{}' > cro-data/state/feedback.json
 
