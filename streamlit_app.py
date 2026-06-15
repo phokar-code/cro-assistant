@@ -179,7 +179,17 @@ def submit_manual_issue(feedback: dict, title: str, severity: str, description: 
 audit, history, baseline, feedback = load_all()
 
 if audit is None:
-    st.error("No audit data found. Trigger the GitHub Actions workflow to seed the first run.")
+    if not USE_API:
+        st.error("**GitHub API not configured.** Secrets are missing or not being read.")
+        st.markdown(f"""
+**Debug info:**
+- `GITHUB_TOKEN` set: `{"yes" if GITHUB_TOKEN else "no"}`
+- `DATA_REPO` set: `{"yes — " + DATA_REPO if DATA_REPO else "no"}`
+
+Go to **App settings → Secrets** in Streamlit Cloud and confirm both keys are present.
+        """)
+    else:
+        st.error(f"No audit data found in `{DATA_REPO}`. Trigger the GitHub Actions workflow.")
     st.stop()
 
 pages      = audit["pages"]
