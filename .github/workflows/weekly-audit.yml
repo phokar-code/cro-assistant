@@ -9,13 +9,18 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     permissions:
-      contents: write       # Needed to commit results back to the repo
+      contents: read        # Public code repo is read-only in CI
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code repo
+        uses: actions/checkout@v4
+
+      - name: Checkout private data repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          repository: ${{ secrets.DATA_REPO }}   # e.g. phokar-code/cro-data
+          token: ${{ secrets.DATA_REPO_TOKEN }}   # PAT with repo scope
+          path: cro-data
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -27,24 +32,37 @@ jobs:
           pip install -r requirements.txt
           playwright install chromium --with-deps
 
+      - name: Restore state from data repo
+        run: |
+          mkdir -p state
+          cp cro-data/state/feedback.json state/feedback.json 2>/dev/null || echo '{}' > state/feedback.json
+          cp cro-data/state/history.json  state/history.json  2>/dev/null || true
+          cp cro-data/state/baseline.json state/baseline.json 2>/dev/null || true
+
       - name: Run CRO audit
         run: python main.py audit --no-ai
         env:
           PYTHONUNBUFFERED: '1'
 
-      - name: Commit results back to repo
+      - name: Push results to data repo
         run: |
+          mkdir -p cro-data/state
+          cp report.html         cro-data/report.html
+          cp ROADMAP.md          cro-data/ROADMAP.md          2>/dev/null || true
+          cp state/baseline.json cro-data/state/baseline.json
+          cp state/history.json  cro-data/state/history.json
+          cp state/last_audit.json cro-data/state/last_audit.json
+          # feedback.json is written by the Streamlit app — never overwrite it from CI
+
+          cd cro-data
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add report.html roadmap.md \
-                  state/baseline.json \
-                  state/history.json \
-                  state/last_audit.json
+          git add report.html ROADMAP.md state/baseline.json state/history.json state/last_audit.json
           git diff --staged --quiet || \
             git commit -m "audit: weekly CRO report $(date -u +%Y-%m-%d)"
           git push
 
-      - name: Upload report as downloadable artifact
+      - name: Upload report artifact
         uses: actions/upload-artifact@v4
         with:
           name: cro-report-${{ github.run_number }}

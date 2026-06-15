@@ -9,9 +9,12 @@ env/
 # Streamlit secrets (local dev overrides — never commit)
 .streamlit/secrets.toml
 
-# Local dev artifacts that the CI regenerates
+# All audit output lives in the private data repo, not here
+state/
+report.html
+ROADMAP.md
+report_journeys.html
 tickets/
-state/filmstrips/
 
 # Local reference PDFs and their reader script
 articles/

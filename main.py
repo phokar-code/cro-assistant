@@ -43,6 +43,7 @@ from analyzer.reporter     import (
     update_history,
     save_history,
 )
+from analyzer.feedback     import load_feedback, apply_feedback, team_regressions
 from analyzer.journeys         import JourneyRunner, analyse_journeys
 from analyzer.reporter_journey import generate_journey_report
 
@@ -95,8 +96,13 @@ async def run_audit(max_pages: int = 8, use_ai: bool = True) -> list:
         page["performance_check"] = await run_performance_checks(page["url"])
     print("Performance checks done\n")
 
-    # 4. Assemble results
-    results = assemble_results(crawled_pages)
+    # 4. Assemble results + apply team feedback
+    results  = assemble_results(crawled_pages)
+    feedback = load_feedback()
+    results  = apply_feedback(results, feedback)
+    fb_regressions = team_regressions(results, feedback)
+    if fb_regressions:
+        print(f"  [!] Team marked fixed, still detected: {', '.join(fb_regressions)}")
 
     # 5. AI analysis
     if use_ai:
