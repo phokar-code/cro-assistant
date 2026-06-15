@@ -3,24 +3,25 @@ name: Weekly CRO Audit — pepstores.com
 on:
   schedule:
     - cron: '0 7 * * 1'   # Every Monday 07:00 UTC (09:00 SAST)
-  workflow_dispatch:        # Manual trigger from GitHub Actions UI
+  workflow_dispatch:
 
 jobs:
   audit:
     runs-on: ubuntu-latest
     permissions:
-      contents: read        # Public code repo is read-only in CI
+      contents: read
 
     steps:
       - name: Checkout code repo
         uses: actions/checkout@v4
 
-      - name: Checkout private data repo
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ secrets.DATA_REPO }}   # e.g. phokar-code/cro-data
-          token: ${{ secrets.DATA_REPO_TOKEN }}   # PAT with repo scope
-          path: cro-data
+      - name: Clone private data repo (handles empty repo on first run)
+        run: |
+          git clone https://x-access-token:${{ secrets.DATA_REPO_TOKEN }}@github.com/${{ secrets.DATA_REPO }}.git cro-data
+          # If repo was empty, create the main branch so we can push later
+          cd cro-data
+          git checkout -b main 2>/dev/null || true
+          cd ..
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -47,20 +48,20 @@ jobs:
       - name: Push results to data repo
         run: |
           mkdir -p cro-data/state
-          cp report.html         cro-data/report.html
-          cp ROADMAP.md          cro-data/ROADMAP.md          2>/dev/null || true
-          cp state/baseline.json cro-data/state/baseline.json
-          cp state/history.json  cro-data/state/history.json
+          cp report.html           cro-data/report.html
+          cp ROADMAP.md            cro-data/ROADMAP.md          2>/dev/null || true
+          cp state/baseline.json   cro-data/state/baseline.json
+          cp state/history.json    cro-data/state/history.json
           cp state/last_audit.json cro-data/state/last_audit.json
-          # feedback.json is written by the Streamlit app — never overwrite it from CI
+          # feedback.json is only written by the Streamlit app — CI never overwrites it
+          [ -f cro-data/state/feedback.json ] || echo '{}' > cro-data/state/feedback.json
 
           cd cro-data
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add report.html ROADMAP.md state/baseline.json state/history.json state/last_audit.json
-          git diff --staged --quiet || \
-            git commit -m "audit: weekly CRO report $(date -u +%Y-%m-%d)"
-          git push
+          git add .
+          git diff --staged --quiet || git commit -m "audit: $(date -u +%Y-%m-%d)"
+          git push --set-upstream origin main
 
       - name: Upload report artifact
         uses: actions/upload-artifact@v4
