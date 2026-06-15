@@ -36,7 +36,7 @@ st.set_page_config(page_title="Pep CRO Dashboard", page_icon="📊", layout="wid
 
 st.markdown("""
 <style>
-.block-container { padding-top: 0.75rem !important; }
+.block-container { padding-top: 2.5rem !important; }
 
 .pep-header {
     display: flex; align-items: center; justify-content: space-between;
@@ -122,6 +122,21 @@ def _gh_put_json(path: str, data: dict, message: str) -> bool:
 
 
 # ── Data loading (cached) ─────────────────────────────────────────────────────
+
+@st.cache_data(ttl=120)
+def load_report_html() -> bytes | None:
+    if USE_API:
+        try:
+            r = httpx.get(
+                f"{_API}/report.html",
+                headers={**_AUTH, "Accept": "application/vnd.github.v3.raw"},
+                timeout=30,
+            )
+            return r.content if r.status_code == 200 else None
+        except Exception:
+            return None
+    return REPORT_PATH.read_bytes() if REPORT_PATH.exists() else None
+
 
 @st.cache_data(ttl=120)
 def load_all():
@@ -448,34 +463,15 @@ with tab_pages:
 # ─── Full report ──────────────────────────────────────────────────────────────
 
 with tab_report:
-    st.info("Includes per-page filmstrips, journey data, and the detailed roadmap.")
+    report_bytes = load_report_html()
 
-    if USE_API:
-        if st.button("Fetch & download full HTML report"):
-            with st.spinner("Fetching from data repo…"):
-                try:
-                    r = httpx.get(
-                        f"{_API}/report.html",
-                        headers={**_AUTH, "Accept": "application/vnd.github.v3.raw"},
-                        timeout=30,
-                    )
-                    if r.status_code == 200:
-                        st.download_button(
-                            "⬇ Save report.html",
-                            data=r.content,
-                            file_name="pepstores_cro_report.html",
-                            mime="text/html",
-                        )
-                    else:
-                        st.warning("report.html not found in data repo yet.")
-                except Exception as e:
-                    st.error(f"Fetch failed: {e}")
-    elif REPORT_PATH.exists():
+    if report_bytes:
         st.download_button(
-            "⬇ Download full HTML report",
-            data=REPORT_PATH.read_bytes(),
+            "⬇ Download report.html",
+            data=report_bytes,
             file_name="pepstores_cro_report.html",
             mime="text/html",
         )
+        components.html(report_bytes.decode("utf-8", errors="replace"), height=1100, scrolling=True)
     else:
-        st.warning("report.html not found.")
+        st.warning("report.html not found in the data repo. Trigger the audit workflow to generate one.")
