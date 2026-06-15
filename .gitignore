@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# Streamlit secrets (local dev overrides — never commit)
+.streamlit/secrets.toml
+
+# Local dev artifacts that the CI regenerates
+tickets/
+state/filmstrips/
+
+# Local reference PDFs and their reader script
+articles/
+read_articles.py
+
+# One-off debug/inspection scripts
+inspect_availability.py
+
+# OS
+.DS_Store
+Thumbs.db

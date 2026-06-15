@@ -1,0 +1,52 @@
+name: Weekly CRO Audit — pepstores.com
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'   # Every Monday 07:00 UTC (09:00 SAST)
+  workflow_dispatch:        # Manual trigger from GitHub Actions UI
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # Needed to commit results back to the repo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium --with-deps
+
+      - name: Run CRO audit
+        run: python main.py audit --no-ai
+        env:
+          PYTHONUNBUFFERED: '1'
+
+      - name: Commit results back to repo
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add report.html roadmap.md \
+                  state/baseline.json \
+                  state/history.json \
+                  state/last_audit.json
+          git diff --staged --quiet || \
+            git commit -m "audit: weekly CRO report $(date -u +%Y-%m-%d)"
+          git push
+
+      - name: Upload report as downloadable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cro-report-${{ github.run_number }}
+          path: report.html
+          retention-days: 90

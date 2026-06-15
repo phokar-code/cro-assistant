@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRO Audit Report — pepstores.com</title>
+<style>
+/* ── Brand & palette ────────────────────────────────────────────── */
+:root {
+  --pep:          #2563EB;
+  --pep-dark:     #1D4ED8;
+  --pep-light:    #EFF6FF;
+  --critical:     #D92D20;
+  --critical-bg:  #FEF3F2;
+  --critical-bdr: #FCA5A5;
+  --warning:      #B54708;
+  --warning-bg:   #FFFAEB;
+  --warning-bdr:  #FCD34D;
+  --info:         #1849A9;
+  --info-bg:      #EFF4FF;
+  --info-bdr:     #A4BCFD;
+  --pass:         #027A48;
+  --pass-bg:      #ECFDF3;
+  --pass-bdr:     #6CE9A6;
+  --bg:           #F9FAFB;
+  --surface:      #FFFFFF;
+  --border:       #E5E7EB;
+  --text:         #111827;
+  --muted:        #6B7280;
+  --subtle:       #9CA3AF;
+  --radius:       8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+a { color: var(--pep); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Layout ─────────────────────────────────────────────────────── */
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+/* ── Top bar ─────────────────────────────────────────────────────── */
+.topbar {
+  background: var(--pep); color: #fff;
+  padding: 0;
+  position: sticky; top: 0; z-index: 200;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+.topbar-inner {
+  display: flex; align-items: center; gap: 0;
+  height: 52px;
+}
+.topbar-logo {
+  background: #fff; color: var(--pep);
+  font-size: 22px; font-weight: 900; letter-spacing: -1px;
+  padding: 0 20px; height: 100%; display: flex; align-items: center;
+  border-right: 3px solid var(--pep-dark);
+}
+.topbar-title {
+  padding: 0 20px; font-size: 15px; font-weight: 600; flex: 1;
+}
+.topbar-meta { padding: 0 20px; font-size: 12px; opacity: .85; white-space: nowrap; }
+.topbar-nav {
+  display: flex; height: 100%;
+  border-left: 1px solid rgba(255,255,255,.2);
+}
+.topbar-nav a {
+  color: #fff; padding: 0 16px; font-size: 12px; font-weight: 500;
+  display: flex; align-items: center; border-left: 1px solid rgba(255,255,255,.15);
+  transition: background .15s;
+}
+.topbar-nav a:hover { background: rgba(0,0,0,.15); text-decoration: none; }
+
+/* ── Summary hero ────────────────────────────────────────────────── */
+.hero {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 36px 0;
+}
+.hero-inner { display: grid; grid-template-columns: 180px 1fr; gap: 40px; align-items: center; }
+.score-circle {
+  width: 160px; height: 160px; border-radius: 50%;
+  background: conic-gradient({{ score_color }} {{ site_score }}%, #E5E7EB 0);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; flex-shrink: 0;
+}
+.score-circle::before {
+  content: ''; position: absolute; inset: 14px;
+  border-radius: 50%; background: var(--surface);
+}
+.score-inner { position: relative; z-index: 1; text-align: center; }
+.score-num   { font-size: 44px; font-weight: 800; color: {{ score_color }}; line-height: 1; }
+.score-lbl   { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-top: 2px; }
+.hero-right  {}
+.hero-heading { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.hero-sub     { color: var(--muted); margin-bottom: 20px; font-size: 13px; }
+.stat-pills   { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.pill {
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 16px; background: var(--bg);
+}
+.pill-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.pill-num { font-size: 24px; font-weight: 700; line-height: 1; }
+.pill-label { font-size: 11px; color: var(--muted); }
+.score-bars { display: flex; gap: 24px; flex-wrap: wrap; }
+.sbar { display: flex; align-items: center; gap: 8px; }
+.sbar-name { font-size: 12px; color: var(--muted); width: 90px; }
+.sbar-track { width: 80px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.sbar-fill  { height: 100%; border-radius: 3px; }
+.sbar-val   { font-size: 12px; color: var(--muted); width: 28px; }
+
+/* ── Section ─────────────────────────────────────────────────────── */
+.section { padding: 32px 0; border-top: 1px solid var(--border); }
+.section-hd {
+  font-size: 16px; font-weight: 700; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+.badge {
+  font-size: 11px; font-weight: 600; padding: 2px 8px;
+  border-radius: 4px; border: 1px solid var(--border);
+  color: var(--muted); background: var(--bg);
+}
+.badge.crit { border-color: var(--critical-bdr); color: var(--critical); background: var(--critical-bg); }
+.badge.warn { border-color: var(--warning-bdr);  color: var(--warning);  background: var(--warning-bg); }
+
+/* ── Page section ────────────────────────────────────────────────── */
+.page-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 24px; overflow: hidden;
+}
+.page-section-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 20px; background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer; user-select: none;
+}
+.page-section-header:hover { background: #f3f4f6; }
+.page-type-chip {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  background: var(--pep); color: #fff;
+  padding: 3px 9px; border-radius: 4px;
+}
+.page-url    { font-size: 13px; color: var(--muted); flex: 1; }
+.page-counts { display: flex; gap: 8px; }
+.cnt { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+.cnt.c { background: var(--critical-bg); color: var(--critical); border: 1px solid var(--critical-bdr); }
+.cnt.w { background: var(--warning-bg);  color: var(--warning);  border: 1px solid var(--warning-bdr); }
+.cnt.i { background: var(--info-bg);     color: var(--info);     border: 1px solid var(--info-bdr); }
+.cnt.p { background: var(--pass-bg);     color: var(--pass);     border: 1px solid var(--pass-bdr); }
+.chevron { color: var(--muted); font-size: 12px; transition: transform .2s; }
+.page-section-body { display: none; }
+.page-section.open .page-section-body { display: block; }
+.page-section.open .chevron { transform: rotate(180deg); }
+
+.page-layout {
+  display: grid; grid-template-columns: 380px 1fr; gap: 0;
+}
+
+/* Evidence screenshot pane */
+.evidence-pane {
+  border-right: 1px solid var(--border);
+  padding: 0;
+  background: #1a1a1a;
+  position: sticky; top: 52px; align-self: start;
+  max-height: calc(100vh - 52px); overflow-y: auto;
+}
+.evidence-screenshot {
+  width: 100%; display: block; cursor: zoom-in;
+  transition: opacity .2s;
+}
+.evidence-screenshot:hover { opacity: .9; }
+.evidence-label {
+  background: #111; color: #aaa;
+  font-size: 11px; padding: 8px 12px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.evidence-label a { color: var(--pep); font-size: 11px; }
+.evidence-no-ss {
+  min-height: 280px; display: flex; align-items: center; justify-content: center;
+  color: #555; font-size: 13px;
+}
+.evidence-meta {
+  padding: 12px 16px; border-top: 1px solid #2a2a2a;
+}
+.score-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.score-chip {
+  font-size: 11px; padding: 3px 10px; border-radius: 12px;
+  font-weight: 600;
+}
+.func-row { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+.func-chip {
+  font-size: 11px; padding: 2px 9px; border-radius: 12px; font-weight: 600;
+}
+.fc-pass { background: var(--pass-bg); color: var(--pass); border: 1px solid var(--pass-bdr); }
+.fc-fail { background: var(--critical-bg); color: var(--critical); border: 1px solid var(--critical-bdr); }
+.fc-na   { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+/* Issues pane */
+.issues-pane { padding: 16px 20px; }
+.issues-pane-empty {
+  padding: 32px 20px; color: var(--pass); text-align: center; font-weight: 600;
+}
+.issue-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  margin-bottom: 10px; overflow: hidden;
+}
+.issue-card.critical { border-left: 4px solid var(--critical); }
+.issue-card.warning  { border-left: 4px solid var(--warning); }
+.issue-card.info     { border-left: 4px solid var(--info); }
+.issue-top {
+  padding: 12px 14px 8px;
+  display: flex; align-items: flex-start; gap: 10px; justify-content: space-between;
+}
+.issue-title   { font-weight: 600; font-size: 13px; flex: 1; }
+.sev-tag {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  padding: 2px 7px; border-radius: 4px; white-space: nowrap; flex-shrink: 0;
+}
+.sev-tag.critical { background: var(--critical-bg); color: var(--critical); }
+.sev-tag.warning  { background: var(--warning-bg);  color: var(--warning); }
+.sev-tag.info     { background: var(--info-bg);      color: var(--info); }
+.issue-body { padding: 0 14px 12px; }
+.issue-desc { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.issue-rec  {
+  font-size: 12px; color: #065F46;
+  background: var(--pass-bg); border: 1px solid var(--pass-bdr);
+  border-radius: 4px; padding: 6px 10px;
+  display: flex; gap: 6px;
+}
+.issue-rec::before { content: 'Fix:'; font-weight: 700; flex-shrink: 0; }
+.issue-impact {
+  font-size: 11px; color: var(--warning); margin-top: 5px;
+  font-style: italic;
+}
+.issue-cat { font-size: 10px; color: var(--subtle); margin-top: 4px; }
+
+/* ── Regression diff ─────────────────────────────────────────────── */
+.diff-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.diff-box  { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; background: var(--surface); }
+.diff-box.reg h3 { color: var(--critical); }
+.diff-box.fix h3 { color: var(--pass); }
+.diff-box.new h3 { color: var(--warning); }
+.diff-box h3     { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+.diff-item       { font-size: 12px; color: var(--muted); padding: 5px 0; border-bottom: 1px solid var(--border); }
+.diff-item:last-child { border-bottom: none; }
+
+/* ── Roadmap table ───────────────────────────────────────────────── */
+.roadmap-wrap { overflow-x: auto; }
+.rtable { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+.rtable th { background: var(--bg); text-align: left; padding: 10px 14px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; border-bottom: 2px solid var(--border); }
+.rtable td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+.rtable tr:last-child td { border-bottom: none; }
+.rtable tr:hover td { background: #fafafa; }
+.p0  { font-weight: 800; color: var(--critical); white-space: nowrap; }
+.p1  { font-weight: 700; color: var(--warning);  white-space: nowrap; }
+.p2  { font-weight: 600; color: var(--info);     white-space: nowrap; }
+.p3  { font-weight: 600; color: var(--muted);    white-space: nowrap; }
+
+/* ── AI narrative ────────────────────────────────────────────────── */
+.ai-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 28px;
+}
+.ai-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--pep); margin-bottom: 16px;
+  background: var(--pep-light); padding: 4px 10px; border-radius: 4px;
+}
+.ai-card h1, .ai-card h2, .ai-card h3 { color: var(--text); font-weight: 700; margin: 20px 0 8px; }
+.ai-card h1 { font-size: 18px; }
+.ai-card h2 { font-size: 15px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.ai-card h3 { font-size: 13px; }
+.ai-card p  { color: var(--muted); margin-bottom: 10px; font-size: 13px; }
+.ai-card ul, .ai-card ol { padding-left: 20px; color: var(--muted); margin-bottom: 10px; font-size: 13px; }
+.ai-card li { margin-bottom: 4px; }
+.ai-card strong { color: var(--text); }
+.ai-card hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.ai-card code { background: var(--bg); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; font-size: 12px; }
+.ai-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; }
+.ai-table th { background: var(--bg); text-align: left; padding: 8px 12px; border: 1px solid var(--border); font-weight: 700; color: var(--text); }
+.ai-table td { padding: 8px 12px; border: 1px solid var(--border); color: var(--muted); vertical-align: top; }
+.ai-table tr:nth-child(even) td { background: #fafafa; }
+
+/* ── Lightbox ────────────────────────────────────────────────────── */
+.lbx {
+  display: none; position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,.93); align-items: center; justify-content: center;
+  flex-direction: column; gap: 14px;
+}
+.lbx.open { display: flex; }
+.lbx img { max-width: 88vw; max-height: 78vh; border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,.8); }
+.lbx-meta { color: #9ca3af; font-size: 12px; }
+.lbx-close { position: absolute; top: 18px; right: 22px; font-size: 26px; color: #fff; cursor: pointer; background: none; border: none; line-height: 1; }
+.lbx-nav { position: absolute; top: 50%; transform: translateY(-50%); font-size: 28px; color: #fff; cursor: pointer; background: rgba(255,255,255,.1); border: none; padding: 8px 14px; border-radius: 6px; }
+.lbx-prev { left: 14px; }
+.lbx-next { right: 14px; }
+
+/* ── Exec summary strip ──────────────────────────────────────────── */
+.exec-strip {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0;
+}
+.exec-strip-inner {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+}
+.exec-col {
+  padding: 20px 28px;
+}
+.exec-col + .exec-col {
+  border-left: 1px solid var(--border);
+}
+.exec-col-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.exec-col-label span {
+  width: 6px; height: 6px; border-radius: 50%; display: inline-block;
+}
+.exec-stat-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+.exec-score-main { font-size: 28px; font-weight: 800; line-height: 1; }
+.exec-delta {
+  font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+}
+.exec-delta.up   { background: var(--pass-bg);     color: var(--pass);     border: 1px solid var(--pass-bdr); }
+.exec-delta.down { background: var(--critical-bg);  color: var(--critical); border: 1px solid var(--critical-bdr); }
+.exec-delta.flat { background: var(--bg);           color: var(--muted);    border: 1px solid var(--border); }
+.exec-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.exec-chip {
+  font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 4px;
+  display: flex; align-items: center; gap: 4px;
+}
+.ec-pass { background: var(--pass-bg);     color: var(--pass);     border: 1px solid var(--pass-bdr); }
+.ec-warn { background: var(--critical-bg); color: var(--critical); border: 1px solid var(--critical-bdr); }
+.ec-new  { background: var(--warning-bg);  color: var(--warning);  border: 1px solid var(--warning-bdr); }
+.ec-ok   { background: var(--bg);          color: var(--muted);    border: 1px solid var(--border); }
+.exec-longest {
+  font-size: 12px; color: var(--muted); margin-top: 4px;
+}
+.exec-longest strong { color: var(--text); }
+.exec-top-finding {
+  font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; line-height: 1.4;
+}
+.exec-top-impact {
+  font-size: 12px; color: var(--muted); line-height: 1.5;
+}
+@media (max-width: 800px) {
+  .exec-strip-inner { grid-template-columns: 1fr; }
+  .exec-col + .exec-col { border-left: none; border-top: 1px solid var(--border); }
+}
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+.footer { border-top: 1px solid var(--border); padding: 24px 0; margin-top: 48px; color: var(--muted); font-size: 12px; }
+.footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.footer-pep { font-weight: 800; color: var(--pep); }
+
+@media (max-width: 800px) {
+  .hero-inner   { grid-template-columns: 1fr; }
+  .score-circle { margin: 0 auto; }
+  .page-layout  { grid-template-columns: 1fr; }
+  .evidence-pane { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+  .diff-grid    { grid-template-columns: 1fr; }
+  .topbar-nav   { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Lightbox -->
+<div class="lbx" id="lbx" onclick="if(event.target.id==='lbx')lbxClose()">
+  <button class="lbx-close" onclick="lbxClose()">&#x2715;</button>
+  <button class="lbx-nav lbx-prev" onclick="lbxShift(-1)">&#8249;</button>
+  <img id="lbx-img" src="" alt="">
+  <div class="lbx-meta" id="lbx-meta"></div>
+  <button class="lbx-nav lbx-next" onclick="lbxShift(1)">&#8250;</button>
+</div>
+<script>
+const SHOTS=[{% for p in pages %}{% if p.screenshot %}{"src":"data:image/jpeg;base64,{{ p.screenshot }}","label":"{{ p.page_type|capitalize }} — {{ p.url }}"},{% endif %}{% endfor %}];
+let LBX_I=0;
+function lbxOpen(i){LBX_I=i%SHOTS.length;document.getElementById('lbx-img').src=SHOTS[LBX_I].src;document.getElementById('lbx-meta').textContent=SHOTS[LBX_I].label;document.getElementById('lbx').classList.add('open');}
+function lbxClose(){document.getElementById('lbx').classList.remove('open');}
+function lbxShift(d){lbxOpen((LBX_I+d+SHOTS.length)%SHOTS.length);}
+document.addEventListener('keydown',e=>{if(!document.getElementById('lbx').classList.contains('open'))return;if(e.key==='Escape')lbxClose();if(e.key==='ArrowRight')lbxShift(1);if(e.key==='ArrowLeft')lbxShift(-1);});
+</script>
+
+<!-- Top bar -->
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="topbar-logo">PEP</div>
+    <div class="topbar-title">CRO Audit Report &mdash; pepstores.com</div>
+    <div class="topbar-meta">{{ report_date }}</div>
+    <nav class="topbar-nav">
+      {% if ai_narrative %}<a href="#ai-analysis">Analysis</a>{% endif %}
+      {% if journey_html %}<a href="#journeys">Journeys</a>{% endif %}
+      <a href="#pages">Pages</a>
+      <a href="#roadmap">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Summary hero -->
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="score-circle">
+        <div class="score-inner">
+          <div class="score-num">{{ site_score }}</div>
+          <div class="score-lbl">{{ score_label }}</div>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="hero-heading">Conversion Health — {{ total_pages }} pages analysed</div>
+        <div class="hero-sub">Shopify functional testing &middot; Core Web Vitals &middot; Trust &amp; UX checks &middot; {{ report_date }}</div>
+        <div class="stat-pills">
+          <div class="pill">
+            <span class="pill-dot" style="background:var(--critical)"></span>
+            <div><div class="pill-num" style="color:var(--critical)">{{ critical_count }}</div><div class="pill-label">Critical</div></div>
+          </div>
+          <div class="pill">
+            <span class="pill-dot" style="background:var(--warning)"></span>
+            <div><div class="pill-num" style="color:var(--warning)">{{ warning_count }}</div><div class="pill-label">Warnings</div></div>
+          </div>
+          <div class="pill">
+            <span class="pill-dot" style="background:var(--info)"></span>
+            <div><div class="pill-num" style="color:var(--info)">{{ info_count }}</div><div class="pill-label">Info</div></div>
+          </div>
+        </div>
+        <div class="score-bars">
+          {% set cat_avg = {} %}
+          {% for page in pages %}{% for k, v in page.scores.items() %}
+            {% if k not in cat_avg %}{% set _ = cat_avg.update({k: []}) %}{% endif %}
+            {% set _ = cat_avg[k].append(v) %}
+          {% endfor %}{% endfor %}
+          {% for cat, vals in cat_avg.items() %}
+          {% set avg = (vals | sum / vals | length) | int %}
+          {% set bc = '#027A48' if avg >= 80 else ('#B54708' if avg >= 60 else ('#D92D20' if avg >= 40 else '#D92D20')) %}
+          <div class="sbar">
+            <span class="sbar-name">{{ cat|capitalize }}</span>
+            <div class="sbar-track"><div class="sbar-fill" style="width:{{ avg }}%;background:{{ bc }}"></div></div>
+            <span class="sbar-val">{{ avg }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Executive summary strip -->
+  <div class="exec-strip">
+    <div class="wrap exec-strip-inner">
+
+      <!-- Left col: for the manager -->
+      <div class="exec-col">
+        <div class="exec-col-label"><span style="background:#2563EB"></span>For the manager — site health vs last run</div>
+        <div class="exec-stat-row">
+          <span class="exec-score-main" style="color:{{ score_color }}">{{ site_score }}/100</span>
+          {% if score_delta is not none %}
+            {% if score_delta > 0 %}
+              <span class="exec-delta up">&#9650; {{ score_delta }} pts</span>
+            {% elif score_delta < 0 %}
+              <span class="exec-delta down">&#9660; {{ score_delta | abs }} pts</span>
+            {% else %}
+              <span class="exec-delta flat">No change</span>
+            {% endif %}
+          {% else %}
+            <span class="exec-delta flat">First run</span>
+          {% endif %}
+        </div>
+        {% if diff %}
+        <div class="exec-chips">
+          {% if diff.regressions %}
+            <span class="exec-chip ec-warn">&#9888; {{ diff.regressions|length }} regression{{ 's' if diff.regressions|length != 1 }}</span>
+          {% else %}
+            <span class="exec-chip ec-pass">&#10003; No regressions</span>
+          {% endif %}
+          {% if diff.fixed %}
+            <span class="exec-chip ec-pass">&#10003; {{ diff.fixed|length }} fixed</span>
+          {% endif %}
+          {% if diff.new_issues %}
+            <span class="exec-chip ec-new">+ {{ diff.new_issues|length }} new</span>
+          {% else %}
+            <span class="exec-chip ec-ok">No new issues</span>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="exec-chips"><span class="exec-chip ec-ok">Baseline run — no previous data</span></div>
+        {% endif %}
+        {% if longest_open %}
+        <div class="exec-longest">Longest open: <strong>{{ longest_open.title[:55] }}{% if longest_open.title|length > 55 %}&hellip;{% endif %}</strong>
+          &mdash; {{ longest_open.days_open }}d unfixed</div>
+        {% endif %}
+      </div>
+
+      <!-- Right col: for the team -->
+      <div class="exec-col">
+        <div class="exec-col-label"><span style="background:#B54708"></span>For the team — what the tool saw that you may have missed</div>
+        {% if top_finding %}
+        <div class="exec-top-finding">{{ top_finding.title }}</div>
+        {% if top_finding.impact %}
+        <div class="exec-top-impact">{{ top_finding.impact }}</div>
+        {% elif top_finding.description %}
+        <div class="exec-top-impact">{{ top_finding.description[:160] }}{% if top_finding.description|length > 160 %}&hellip;{% endif %}</div>
+        {% endif %}
+        <div style="margin-top:10px">
+          <span class="exec-chip ec-warn" style="display:inline-flex">{{ critical_count }} critical &middot; {{ warning_count }} warnings &middot; {{ info_count }} info across {{ total_pages }} pages</span>
+        </div>
+        {% else %}
+        <div class="exec-top-finding" style="color:var(--pass)">&#10003; No issues found this run</div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Regression diff -->
+  {% if diff and (diff.regressions or diff.fixed or diff.new_issues) %}
+  <div class="section">
+    <div class="section-hd">Changes Since Last Run <span class="badge">baseline {{ diff.baseline_date[:10] }}</span></div>
+    <div class="diff-grid">
+      <div class="diff-box reg">
+        <h3>&#9888; Regressions ({{ diff.regressions|length }})</h3>
+        {% for r in diff.regressions %}<div class="diff-item"><strong>{{ r.title }}</strong><br>{{ r.url }}</div>{% else %}<div class="diff-item" style="color:var(--pass)">None detected</div>{% endfor %}
+      </div>
+      <div class="diff-box fix">
+        <h3>&#10003; Fixed ({{ diff.fixed|length }})</h3>
+        {% for f in diff.fixed %}<div class="diff-item"><strong>{{ f.title }}</strong><br>{{ f.url }}</div>{% else %}<div class="diff-item">No fixes detected</div>{% endfor %}
+      </div>
+      <div class="diff-box new">
+        <h3>+ New Issues ({{ diff.new_issues|length }})</h3>
+        {% for n in diff.new_issues %}<div class="diff-item"><strong>{{ n.title }}</strong><br>{{ n.url }}</div>{% else %}<div class="diff-item">No new issues</div>{% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- AI Analysis -->
+  {% if ai_narrative %}
+  <div class="section" id="ai-analysis">
+    <div class="section-hd">CRO Specialist Analysis <span class="badge">Claude AI</span></div>
+    <div class="ai-card">
+      <div class="ai-label">&#9733; pepstores.com — AI CRO Report</div>
+      {{ ai_narrative | safe }}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Journey Runner section -->
+  {% if journey_html %}
+  <div class="section" id="journeys">
+    <div class="section-hd">Journey Runner <span class="badge">Funnel friction analysis</span></div>
+    {{ journey_html | safe }}
+  </div>
+  {% endif %}
+
+  <!-- Page-by-page sections -->
+  <div class="section" id="pages">
+    <div class="section-hd">
+      Pages Analysed
+      {% set nc = critical_count %}{% set nw = warning_count %}
+      {% if nc %}<span class="badge crit">{{ nc }} critical</span>{% endif %}
+      {% if nw %}<span class="badge warn">{{ nw }} warnings</span>{% endif %}
+    </div>
+
+    {% set ss_index = namespace(val=0) %}
+    {% for page in pages %}
+    {% set pc = page.all_issues | selectattr('severity','equalto','critical') | list | length %}
+    {% set pw = page.all_issues | selectattr('severity','equalto','warning')  | list | length %}
+    {% set pi = page.all_issues | selectattr('severity','equalto','info')     | list | length %}
+
+    <div class="page-section{% if loop.index <= 2 %} open{% endif %}" id="page-{{ loop.index }}">
+
+      <!-- Collapsible header -->
+      <div class="page-section-header" onclick="togglePage(this)">
+        <span class="page-type-chip">{{ page.page_type }}</span>
+        <span class="page-url"><a href="{{ page.url }}" target="_blank">{{ page.url }}</a></span>
+        <div class="page-counts">
+          {% if pc %}<span class="cnt c">{{ pc }} critical</span>{% endif %}
+          {% if pw %}<span class="cnt w">{{ pw }} warnings</span>{% endif %}
+          {% if pi %}<span class="cnt i">{{ pi }} info</span>{% endif %}
+          {% if not pc and not pw and not pi %}<span class="cnt p">&#10003; Clean</span>{% endif %}
+        </div>
+        <span class="chevron">&#9660;</span>
+      </div>
+
+      <!-- Body: screenshot left, issues right -->
+      <div class="page-section-body">
+        <div class="page-layout">
+
+          <!-- Evidence pane -->
+          <div class="evidence-pane">
+            {% if page.screenshot %}
+            {% set si = ss_index.val %}
+            <img class="evidence-screenshot"
+                 src="data:image/jpeg;base64,{{ page.screenshot }}"
+                 alt="Screenshot of {{ page.url }}"
+                 onclick="lbxOpen({{ si }})"
+                 title="Click to view full screenshot">
+            {% set ss_index.val = ss_index.val + 1 %}
+            <div class="evidence-label">
+              <span>Evidence screenshot &mdash; {{ page.page_type }}</span>
+              <a href="{{ page.url }}" target="_blank">View live &#8599;</a>
+            </div>
+            {% else %}
+            <div class="evidence-no-ss">No screenshot captured</div>
+            {% endif %}
+
+            <!-- Scores -->
+            <div class="evidence-meta">
+              <div style="font-size:11px;color:#aaa;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Page Scores</div>
+              <div class="score-row">
+                {% for k, v in page.scores.items() %}
+                {% set bc = '#027A48' if v >= 80 else ('#B54708' if v >= 60 else '#D92D20') %}
+                <span class="score-chip" style="background:{{ bc }}20;color:{{ bc }};border:1px solid {{ bc }}50">{{ k|capitalize }}: {{ v }}</span>
+                {% endfor %}
+              </div>
+
+              <!-- Functional tests -->
+              {% if page.functional %}
+              <div class="func-row">
+                {% if page.functional.atc is defined %}
+                  {% if page.functional.atc.cart_responded %}
+                    <span class="func-chip fc-pass">&#10003; Add to Cart working</span>
+                  {% elif page.functional.atc.button_found and not page.functional.atc.button_enabled %}
+                    <span class="func-chip fc-fail">&#x2717; ATC button disabled</span>
+                  {% elif page.functional.atc.button_found %}
+                    <span class="func-chip fc-fail">&#x2717; ATC click — no cart response</span>
+                  {% else %}
+                    <span class="func-chip fc-fail">&#x2717; No ATC button found</span>
+                  {% endif %}
+                {% endif %}
+                {% if page.functional.checkout_btn is defined %}
+                  {% if page.functional.checkout_btn.button_found and page.functional.checkout_btn.button_enabled %}
+                    <span class="func-chip fc-pass">&#10003; Checkout button OK</span>
+                  {% else %}
+                    <span class="func-chip fc-fail">&#x2717; Checkout button missing/disabled</span>
+                  {% endif %}
+                {% endif %}
+                {% if page.functional.mobile_cart is defined %}
+                  {% if page.functional.mobile_cart.cart_icon_tappable %}
+                    <span class="func-chip fc-pass">&#10003; Mobile cart icon OK</span>
+                  {% elif page.functional.mobile_cart.cart_icon_found %}
+                    <span class="func-chip fc-fail">&#x2717; Mobile cart tap target too small</span>
+                  {% else %}
+                    <span class="func-chip fc-fail">&#x2717; Mobile cart icon missing</span>
+                  {% endif %}
+                {% endif %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Issues pane -->
+          <div class="issues-pane">
+            {% if page.all_issues %}
+            {% for issue in page.all_issues %}
+            <div class="issue-card {{ issue.severity }}">
+              <div class="issue-top">
+                <div class="issue-title">{{ issue.title }}</div>
+                <span class="sev-tag {{ issue.severity }}">{{ issue.severity }}</span>
+              </div>
+              <div class="issue-body">
+                {% if issue.impact %}
+                <div class="issue-impact" style="font-style:normal;font-weight:600;color:var(--text);margin-bottom:6px">{{ issue.impact }}</div>
+                {% endif %}
+                <div class="issue-desc">{{ issue.description }}</div>
+                {% if issue.recommendation %}
+                <div class="issue-rec">{{ issue.recommendation }}</div>
+                {% endif %}
+                <div class="issue-cat">{{ issue.category }}</div>
+              </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="issues-pane-empty">&#10003; No issues found on this page</div>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Roadmap -->
+  <div class="section" id="roadmap">
+    <div class="section-hd">Prioritised Roadmap</div>
+    <div class="roadmap-wrap">
+      <table class="rtable">
+        <thead>
+          <tr>
+            <th>Priority</th><th>Issue</th><th>Category</th><th>Page</th><th>Open since</th><th>Fix</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% macro age_badge(issue) %}
+            {% if issue.days_open is defined %}
+              {% if issue.days_open == 0 %}
+                <span style="font-size:10px;font-weight:700;background:#EFF4FF;color:#1849A9;border:1px solid #A4BCFD;border-radius:3px;padding:2px 6px">New</span>
+              {% elif issue.days_open < 14 %}
+                <span style="font-size:10px;font-weight:600;background:#FFFAEB;color:#B54708;border:1px solid #FCD34D;border-radius:3px;padding:2px 6px" title="First seen {{ issue.first_seen }}">{{ issue.days_open }}d</span>
+              {% else %}
+                <span style="font-size:10px;font-weight:600;background:#FEF3F2;color:#D92D20;border:1px solid #FCA5A5;border-radius:3px;padding:2px 6px" title="First seen {{ issue.first_seen }}">{{ (issue.days_open / 7) | int }}w</span>
+              {% endif %}
+            {% else %}
+              <span style="font-size:10px;color:var(--subtle)">—</span>
+            {% endif %}
+          {% endmacro %}
+          {% macro page_col(issue) %}{% if issue.page_count is defined and issue.page_count > 1 %}all {{ issue.page_count }} pages{% else %}{{ issue.page_type }}{% endif %}{% endmacro %}
+          {% macro title_badges(issue, bg, color, bdr) %}{{ issue.title }}{% if issue.page_count is defined and issue.page_count > 1 %} <span style="font-size:10px;font-weight:600;background:{{ bg }};color:{{ color }};border:1px solid {{ bdr }};border-radius:3px;padding:1px 5px">×{{ issue.page_count }} pages</span>{% endif %}{% endmacro %}
+
+          {% for issue in all_issues.critical %}
+          <tr>
+            <td class="p0">P0</td>
+            <td><strong>{{ title_badges(issue, '#FEF3F2', '#D92D20', '#FCA5A5') }}</strong></td>
+            <td>{{ issue.category }}</td>
+            <td style="font-size:12px;color:var(--muted)">{{ page_col(issue) }}</td>
+            <td>{{ age_badge(issue) }}</td>
+            <td style="font-size:12px;color:var(--muted)">{{ (issue.recommendation or '')[:90] }}{% if (issue.recommendation or '')|length > 90 %}&hellip;{% endif %}</td>
+          </tr>
+          {% endfor %}
+          {% for issue in all_issues.warning %}
+          <tr>
+            <td class="p1">P1</td>
+            <td>{{ title_badges(issue, '#FFFAEB', '#B54708', '#FCD34D') }}</td>
+            <td>{{ issue.category }}</td>
+            <td style="font-size:12px;color:var(--muted)">{{ page_col(issue) }}</td>
+            <td>{{ age_badge(issue) }}</td>
+            <td style="font-size:12px;color:var(--muted)">{{ (issue.recommendation or '')[:90] }}{% if (issue.recommendation or '')|length > 90 %}&hellip;{% endif %}</td>
+          </tr>
+          {% endfor %}
+          {% for issue in all_issues.info %}
+          <tr>
+            <td class="p2">P2</td>
+            <td>{{ title_badges(issue, '#EFF4FF', '#1849A9', '#A4BCFD') }}</td>
+            <td>{{ issue.category }}</td>
+            <td style="font-size:12px;color:var(--muted)">{{ page_col(issue) }}</td>
+            <td>{{ age_badge(issue) }}</td>
+            <td style="font-size:12px;color:var(--muted)">{{ (issue.recommendation or '')[:90] }}{% if (issue.recommendation or '')|length > 90 %}&hellip;{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <span><span class="footer-pep">PEP Stores</span> &mdash; CRO Audit Report</span>
+    <span>Generated {{ report_date }} &middot; {{ total_pages }} pages &middot; Playwright + PageSpeed + Claude AI</span>
+  </div>
+</footer>
+
+<script>
+function togglePage(hdr) {
+  hdr.parentElement.classList.toggle('open');
+}
+</script>
+</body>
+</html>
